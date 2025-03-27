@@ -48,7 +48,6 @@ def get_ga4_data():
     df_ga4['날짜'] = pd.to_datetime(df_ga4['날짜'])
     return df_ga4
 
-
 def get_ga4_summary():
     credentials = service_account.Credentials.from_service_account_info(
         st.secrets["gcp_service_account"]
@@ -56,9 +55,9 @@ def get_ga4_summary():
     client = BetaAnalyticsDataClient(credentials=credentials)
 
     request = RunReportRequest(
-        property="properties/482752996",  # GA4 속성 ID (숫자만!)
+        property="123456789",  # 숫자만
         date_ranges=[{"start_date": "7daysAgo", "end_date": "today"}],
-        dimensions=[],
+        dimensions=[{"name": "date"}],  # ✅ 핵심 수정
         metrics=[
             {"name": "activeUsers"},
             {"name": "eventCount"},
@@ -69,14 +68,29 @@ def get_ga4_summary():
 
     response = client.run_report(request)
 
-    result = {
-        "활성 사용자 수": int(response.rows[0].metric_values[0].value),
-        "이벤트 수": int(response.rows[0].metric_values[1].value),
-        "새 사용자 수": int(response.rows[0].metric_values[2].value),
-        "평균 참여 시간 (초)": round(float(response.rows[0].metric_values[3].value), 1),
-    }
+    # 일별 평균을 낼 수도 있고, 가장 최근값을 쓸 수도 있어요
+    rows = response.rows
+    if not rows:
+        return {
+            "활성 사용자 수": 0,
+            "이벤트 수": 0,
+            "새 사용자 수": 0,
+            "평균 참여 시간 (초)": 0.0,
+        }
 
-    return result
+    # 모든 일자 값 누적해서 평균 구하기 (7일간)
+    active_users = sum(int(r.metric_values[0].value) for r in rows)
+    event_count = sum(int(r.metric_values[1].value) for r in rows)
+    new_users = sum(int(r.metric_values[2].value) for r in rows)
+    total_engagement = sum(float(r.metric_values[3].value) for r in rows)
+    avg_engagement = round(total_engagement / len(rows), 1)
+
+    return {
+        "활성 사용자 수": active_users,
+        "이벤트 수": event_count,
+        "새 사용자 수": new_users,
+        "평균 참여 시간 (초)": avg_engagement,
+    }
 
 # --- DB 함수 (SSH 터널링 포함, 완전한 버전) ---
 def get_db_data():
