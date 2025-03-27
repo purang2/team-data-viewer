@@ -61,6 +61,14 @@ def get_db_data():
     db_user = st.secrets["ssh"]["db_user"]
     db_password = st.secrets["ssh"]["db_password"]
     
+    query = """
+    SELECT verse_ref, verse_text, COUNT(*) AS count
+    FROM verse_statistics
+    GROUP BY verse_ref, verse_text
+    ORDER BY count DESC
+    LIMIT 30;
+    """
+    
     with SSHTunnelForwarder(
         (ssh_host, ssh_port),
         ssh_username=ssh_username,
