@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
@@ -6,68 +5,82 @@ from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import RunReportRequest
 from google.oauth2 import service_account
 
-# 페이지 설정
-st.set_page_config(page_title="말씀동행 서비스 GA & DB 실시간 데이터 조회", layout="wide")
-st.title("말씀동행 데이터 조회")
+st.set_page_config(page_title="📊 Team Data Viewer", layout="wide")
 
-# Google API 인증
-credentials = service_account.Credentials.from_service_account_file(
-    'service-account.json'
-)
+# Header 디자인
+st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>📊 Team Data Viewer</h1>", unsafe_allow_html=True)
 
-# GA4 데이터 조회 함수
+# --- GA4 함수 ---
 def get_ga4_data():
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"]
+    )
     client = BetaAnalyticsDataClient(credentials=credentials)
+
     request = RunReportRequest(
-        property="properties/GA4속성ID",
+        property="properties/482752996",
         date_ranges=[{"start_date": "30daysAgo", "end_date": "today"}],
-        dimensions=[{"name": "pagePath"}],
+        dimensions=[{"name": "date"}],
         metrics=[{"name": "screenPageViews"}],
     )
     response = client.run_report(request)
-    df = pd.DataFrame([{
-        '페이지': row.dimension_values[0].value,
+    df_ga4 = pd.DataFrame([{
+        '날짜': row.dimension_values[0].value,
         '조회수': int(row.metric_values[0].value)
     } for row in response.rows])
-    return df
 
-# DB 데이터 조회 함수
+    df_ga4['날짜'] = pd.to_datetime(df_ga4['날짜'])
+    return df_ga4
+
+# --- DB 함수 ---
 def get_db_data():
-    engine = create_engine('postgresql://user:password@host:port/dbname')
-    df = pd.read_sql("SELECT * FROM your_table", engine)
-    return df
+    db_secret = st.secrets["db"]
+    engine = create_engine(
+        f"postgresql://{db_secret['user']}:{db_secret['password']}@{db_secret['host']}:{db_secret['port']}/{db_secret['dbname']}"
+    )
+    query = """
+    SELECT verse_ref, verse_text, COUNT(*) AS count
+    FROM verse_statistics
+    GROUP BY verse_ref, verse_text
+    ORDER BY count DESC
+    LIMIT 30;
+    """
+    df_db = pd.read_sql(query, engine)
+    return df_db
 
-# 버튼 생성 (중요 UX)
-if st.button('🔄 실시간 데이터 가져오기'):
-    with st.spinner('⏳ 데이터를 가져오는 중...'):
-        df_ga4 = get_ga4_data()
-        df_db = get_db_data()
+# 버튼 클릭 로직
+if st.button("🔄 실시간 데이터 조회"):
+    with st.spinner('⏳ 데이터를 불러오는 중...'):
+        ga4_data = get_ga4_data()
+        db_data = get_db_data()
 
-        st.success('✅ 데이터 로딩 완료!')
+        st.markdown("<h2 style='color:#4B89FF;'>GA4 최근 30일 조회수 추이</h2>", unsafe_allow_html=True)
+        st.line_chart(ga4_data.set_index('날짜')['조회수'])
 
-        st.subheader('GA4 데이터')
-        st.dataframe(df_ga4)
+        st.markdown("<h3 style='color:#4B89FF;'>📅 GA4 데이터 테이블</h3>", unsafe_allow_html=True)
+        ga4_data_styled = ga4_data.style.format({"조회수": "{:,.0f}"}).applymap(lambda x: 'color: blue', subset=['조회수'])
+        st.dataframe(ga4_data_styled, use_container_width=True)
 
-        st.subheader('DB 데이터')
-        st.dataframe(df_db)
+        st.markdown("---")
+        st.markdown("<h2 style='color:#FF4B4B;'>🔥 인기 구절 Top 30</h2>", unsafe_allow_html=True)
+        st.dataframe(db_data.style.format({"count": "{:,.0f}"}), use_container_width=True)
 
-        # Excel 다운로드 기능 추가
-        def to_excel(df1, df2):
-            output = pd.ExcelWriter("report.xlsx")
-            df1.to_excel(output, sheet_name='GA4', index=False)
-            df2.to_excel(output, sheet_name='DB', index=False)
-            output.save()
-            return output.path
+        # Excel 다운로드
+        @st.cache_data
+        def convert_to_excel(df_ga, df_db):
+            with pd.ExcelWriter("report.xlsx") as writer:
+                df_ga.to_excel(writer, sheet_name='GA4_Data', index=False)
+                df_db.to_excel(writer, sheet_name='DB_Verse_Stats', index=False)
+            with open("report.xlsx", "rb") as f:
+                return f.read()
 
-        excel_path = to_excel(df_ga4, df_db)
+        excel_file = convert_to_excel(ga4_data, db_data)
 
-        with open(excel_path, "rb") as file:
-            btn = st.download_button(
-                label="📥 엑셀 다운로드",
-                data=file,
-                file_name="실시간_데이터.xlsx",
-                mime="application/vnd.ms-excel"
-            )
-
+        st.download_button(
+            label="📥 Excel 다운로드",
+            data=excel_file,
+            file_name="Team_Data_Report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 else:
-    st.info('👆 위 버튼을 클릭하면 최신 데이터가 즉시 로드됩니다.')
+    st.markdown("<h3 style='text-align: center;'>👆 위 버튼을 눌러 최신 데이터를 확인하세요!</h3>", unsafe_allow_html=True)
