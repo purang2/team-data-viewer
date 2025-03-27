@@ -10,6 +10,21 @@ st.set_page_config(page_title="📊 Team Data Viewer", layout="wide")
 # Header 디자인
 st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>📊 Team Data Viewer</h1>", unsafe_allow_html=True)
 
+# FONT : Pretendard
+pretendard_css = """
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+html, body, [class*="css"]  {
+    font-family: 'Pretendard', sans-serif;
+}
+</style>
+"""
+
+st.markdown(pretendard_css, unsafe_allow_html=True)
+
+
+
 # --- GA4 함수 ---
 def get_ga4_data():
     credentials = service_account.Credentials.from_service_account_info(
