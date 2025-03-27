@@ -34,7 +34,7 @@ def get_ga4_data():
     client = BetaAnalyticsDataClient(credentials=credentials)
 
     request = RunReportRequest(
-        property="482752996",
+        property="properties/482752996",
         date_ranges=[{"start_date": "30daysAgo", "end_date": "today"}],
         dimensions=[{"name": "date"}],
         metrics=[{"name": "screenPageViews"}],
