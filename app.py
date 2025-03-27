@@ -26,7 +26,6 @@ html, body, [class*="css"]  {
 st.markdown(pretendard_css, unsafe_allow_html=True)
 
 
-
 # --- GA4 함수 ---
 def get_ga4_data():
     credentials = service_account.Credentials.from_service_account_info(
@@ -35,7 +34,7 @@ def get_ga4_data():
     client = BetaAnalyticsDataClient(credentials=credentials)
 
     request = RunReportRequest(
-        property="properties/482752996",
+        property="properties/GA4속성ID",
         date_ranges=[{"start_date": "30daysAgo", "end_date": "today"}],
         dimensions=[{"name": "date"}],
         metrics=[{"name": "screenPageViews"}],
@@ -48,10 +47,11 @@ def get_ga4_data():
 
     df_ga4['날짜'] = pd.to_datetime(df_ga4['날짜'])
     return df_ga4
-    
+
+# --- DB 함수 (SSH 터널링 포함, 완전한 버전) ---
 def get_db_data():
     ssh_host = st.secrets["ssh"]["ssh_host"]
-    ssh_port = st.secrets["ssh"]["ssh_port"]  # 추가된 항목 (14444)
+    ssh_port = st.secrets["ssh"]["ssh_port"]
     ssh_username = st.secrets["ssh"]["ssh_username"]
     ssh_password = st.secrets["ssh"]["ssh_password"]
 
@@ -60,7 +60,7 @@ def get_db_data():
     db_name = st.secrets["ssh"]["db_name"]
     db_user = st.secrets["ssh"]["db_user"]
     db_password = st.secrets["ssh"]["db_password"]
-    
+
     query = """
     SELECT verse_ref, verse_text, COUNT(*) AS count
     FROM verse_statistics
@@ -68,55 +68,34 @@ def get_db_data():
     ORDER BY count DESC
     LIMIT 30;
     """
-    
+
     with SSHTunnelForwarder(
         (ssh_host, ssh_port),
         ssh_username=ssh_username,
         ssh_password=ssh_password,
-        remote_bind_address=(db_host, db_port)  # 반드시 내부망 DB 주소 입력
+        remote_bind_address=(db_host, db_port)
     ) as tunnel:
-    
-        local_port = tunnel.local_bind_port
-        engine = create_engine(f'postgresql://{db_user}:{db_password}@localhost:{local_port}/{db_name}')
-    
-        df_db = pd.read_sql(query, engine)
 
+        local_port = tunnel.local_bind_port
+        engine = create_engine(
+            f'postgresql://{db_user}:{db_password}@localhost:{local_port}/{db_name}'
+        )
+
+        df_db = pd.read_sql(query, engine)
 
     return df_db
 
-# 버튼 클릭 로직
+# --- 버튼 클릭시 데이터 로드 ---
 if st.button("🔄 실시간 데이터 조회"):
     with st.spinner('⏳ 데이터를 불러오는 중...'):
         ga4_data = get_ga4_data()
         db_data = get_db_data()
 
-        st.markdown("<h2 style='color:#4B89FF;'>GA4 최근 30일 조회수 추이</h2>", unsafe_allow_html=True)
+        st.subheader("🔹 GA4 데이터")
         st.line_chart(ga4_data.set_index('날짜')['조회수'])
 
-        st.markdown("<h3 style='color:#4B89FF;'>📅 GA4 데이터 테이블</h3>", unsafe_allow_html=True)
-        ga4_data_styled = ga4_data.style.format({"조회수": "{:,.0f}"}).applymap(lambda x: 'color: blue', subset=['조회수'])
-        st.dataframe(ga4_data_styled, use_container_width=True)
+        st.subheader("🔸 DB 인기 구절 Top 30")
+        st.dataframe(db_data, use_container_width=True)
 
-        st.markdown("---")
-        st.markdown("<h2 style='color:#FF4B4B;'>🔥 인기 구절 Top 30</h2>", unsafe_allow_html=True)
-        st.dataframe(db_data.style.format({"count": "{:,.0f}"}), use_container_width=True)
-
-        # Excel 다운로드
-        @st.cache_data
-        def convert_to_excel(df_ga, df_db):
-            with pd.ExcelWriter("report.xlsx") as writer:
-                df_ga.to_excel(writer, sheet_name='GA4_Data', index=False)
-                df_db.to_excel(writer, sheet_name='DB_Verse_Stats', index=False)
-            with open("report.xlsx", "rb") as f:
-                return f.read()
-
-        excel_file = convert_to_excel(ga4_data, db_data)
-
-        st.download_button(
-            label="📥 Excel 다운로드",
-            data=excel_file,
-            file_name="Team_Data_Report.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
 else:
-    st.markdown("<h3 style='text-align: center;'>👆 위 버튼을 눌러 최신 데이터를 확인하세요!</h3>", unsafe_allow_html=True)
+    st.info("👆 버튼을 눌러 최신 데이터를 조회합니다.")
