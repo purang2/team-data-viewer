@@ -53,7 +53,8 @@ def get_db_data():
     ssh_host = st.secrets["ssh"]["ssh_host"]
     ssh_username = st.secrets["ssh"]["ssh_username"]
     ssh_password = st.secrets["ssh"]["ssh_password"]
-
+    ssh_port = st.secrets["ssh"]["ssh_port"]  # 추가된 항목 (14444)
+    
     db_host = st.secrets["ssh"]["db_host"]  # DB의 내부 IP (예: 172.30.1.36)
     db_port = st.secrets["ssh"]["db_port"]  # 일반적으로 5432
     db_name = st.secrets["ssh"]["db_name"]
