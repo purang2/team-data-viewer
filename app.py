@@ -132,18 +132,17 @@ if st.button("🔄 실시간 데이터 조회"):
         
         st.subheader("🔹 구글 애널리틱스 | 말씀동행")
         st.markdown("## 🔹  요약 통계 (최근 7일)")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         col1.metric("👥 활성 사용자 수", f"{summary['활성 사용자 수']:,}")
         col2.metric("✨ 이벤트 수", f"{summary['이벤트 수']:,}")
         col3.metric("🆕 새 사용자 수", f"{summary['새 사용자 수']:,}")
-        col4.metric("⏱ 평균 참여 시간", f"{summary['평균 참여 시간 (초)']}초")
 
         # 📈 추이 그래프
         st.subheader("🔹 GA4 데이터")
         st.line_chart(ga4_data.set_index('날짜')['조회수'])
 
         # 🧾 DB 테이블
-        st.subheader("🔸 DB 인기 구절 Top 30")
+        st.subheader("🔸 DB 인기 성경말씀 구절 Top 30")
         st.dataframe(db_data, use_container_width=True)
 
 else:
