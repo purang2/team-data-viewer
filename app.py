@@ -6,6 +6,7 @@ from google.analytics.data_v1beta.types import RunReportRequest
 from google.oauth2 import service_account
 from sshtunnel import SSHTunnelForwarder
 
+
 st.set_page_config(page_title="📊 Team Data Viewer", layout="wide")
 
 # Header 디자인
@@ -47,29 +48,26 @@ def get_ga4_data():
 
     df_ga4['날짜'] = pd.to_datetime(df_ga4['날짜'])
     return df_ga4
-from sshtunnel import SSHTunnelForwarder
-
+    
 def get_db_data():
     ssh_host = st.secrets["ssh"]["ssh_host"]
+    ssh_port = st.secrets["ssh"]["ssh_port"]  # 추가된 항목 (14444)
     ssh_username = st.secrets["ssh"]["ssh_username"]
     ssh_password = st.secrets["ssh"]["ssh_password"]
-    ssh_port = st.secrets["ssh"]["ssh_port"]  # 추가된 항목 (14444)
-    
-    db_host = st.secrets["ssh"]["db_host"]  # DB의 내부 IP (예: 172.30.1.36)
-    db_port = st.secrets["ssh"]["db_port"]  # 일반적으로 5432
+
+    db_host = st.secrets["ssh"]["db_host"]
+    db_port = st.secrets["ssh"]["db_port"]
     db_name = st.secrets["ssh"]["db_name"]
     db_user = st.secrets["ssh"]["db_user"]
     db_password = st.secrets["ssh"]["db_password"]
 
-    # SSH 터널 시작
     with SSHTunnelForwarder(
-        (ssh_host, 22),
+        (ssh_host, ssh_port),  # 여기에 14444포트로 수정
         ssh_username=ssh_username,
         ssh_password=ssh_password,
         remote_bind_address=(db_host, db_port)
     ) as tunnel:
 
-        # SSH로 생성된 로컬 터널을 통해 DB 접근
         local_port = tunnel.local_bind_port
         engine = create_engine(f'postgresql://{db_user}:{db_password}@localhost:{local_port}/{db_name}')
 
