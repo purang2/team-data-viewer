@@ -60,26 +60,19 @@ def get_db_data():
     db_name = st.secrets["ssh"]["db_name"]
     db_user = st.secrets["ssh"]["db_user"]
     db_password = st.secrets["ssh"]["db_password"]
-
+    
     with SSHTunnelForwarder(
-        (ssh_host, ssh_port),  # 여기에 14444포트로 수정
+        (ssh_host, ssh_port),
         ssh_username=ssh_username,
         ssh_password=ssh_password,
-        remote_bind_address=(db_host, db_port)
+        remote_bind_address=(db_host, db_port)  # 반드시 내부망 DB 주소 입력
     ) as tunnel:
-
+    
         local_port = tunnel.local_bind_port
         engine = create_engine(f'postgresql://{db_user}:{db_password}@localhost:{local_port}/{db_name}')
-
-        query = """
-        SELECT verse_ref, verse_text, COUNT(*) AS count
-        FROM verse_statistics
-        GROUP BY verse_ref, verse_text
-        ORDER BY count DESC
-        LIMIT 30;
-        """
-
+    
         df_db = pd.read_sql(query, engine)
+
 
     return df_db
 
