@@ -7,10 +7,10 @@ from google.oauth2 import service_account
 from sshtunnel import SSHTunnelForwarder
 
 
-st.set_page_config(page_title="📊 Team Data Viewer", layout="wide")
+st.set_page_config(page_title="📊 성경챗봇 데이터 Viewer", layout="wide")
 
 # Header 디자인
-st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>📊 Team Data Viewer</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>📊 성경챗봇 데이터 Viewer</h1>", unsafe_allow_html=True)
 
 # FONT : Pretendard
 pretendard_css = """
