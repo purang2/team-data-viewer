@@ -55,7 +55,7 @@ def get_ga4_summary():
     client = BetaAnalyticsDataClient(credentials=credentials)
 
     request = RunReportRequest(
-        property="123456789",  # 숫자만
+        property="properties/482752996",  # 숫자만
         date_ranges=[{"start_date": "7daysAgo", "end_date": "today"}],
         dimensions=[{"name": "date"}],  # ✅ 핵심 수정
         metrics=[
