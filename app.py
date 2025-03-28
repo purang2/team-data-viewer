@@ -124,12 +124,42 @@ def get_db_data():
         df_db = pd.read_sql(query, engine)
 
     return df_db
-    
+
+
+def get_engine_via_ssh():
+    ssh_host = st.secrets["ssh"]["ssh_host"]
+    ssh_port = st.secrets["ssh"]["ssh_port"]
+    ssh_username = st.secrets["ssh"]["ssh_username"]
+    ssh_password = st.secrets["ssh"]["ssh_password"]
+
+    db_host = st.secrets["ssh"]["db_host"]
+    db_port = st.secrets["ssh"]["db_port"]
+    db_name = st.secrets["ssh"]["db_name"]
+    db_user = st.secrets["ssh"]["db_user"]
+    db_password = st.secrets["ssh"]["db_password"]
+
+    tunnel = SSHTunnelForwarder(
+        (ssh_host, ssh_port),
+        ssh_username=ssh_username,
+        ssh_password=ssh_password,
+        remote_bind_address=(db_host, db_port)
+    )
+    tunnel.start()
+
+    local_port = tunnel.local_bind_port
+    engine = create_engine(f"postgresql://{db_user}:{db_password}@localhost:{local_port}/{db_name}")
+    return engine, tunnel
+
+
 def get_questions_as_text():
+    engine, tunnel = get_engine_via_ssh()
+
     query = "SELECT question_text FROM user_questions"
     df = pd.read_sql(query, engine)
-    
-    # 자주 반복된 질문 제거
+
+    # 터널 닫기
+    tunnel.close()
+
     freq = df['question_text'].value_counts()
     template_questions = freq[freq > 30].index.tolist()
     filtered_df = df[~df['question_text'].isin(template_questions)]
