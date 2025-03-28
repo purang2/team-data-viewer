@@ -50,6 +50,7 @@ def get_ga4_data():
 
     df_ga4['날짜'] = pd.to_datetime(df_ga4['날짜'])
     return df_ga4
+    
 def get_ga4_summary():
     credentials = service_account.Credentials.from_service_account_info(
         st.secrets["gcp_service_account"]
@@ -124,39 +125,31 @@ def get_db_data():
         df_db = pd.read_sql(query, engine)
 
     return df_db
-
-def get_filtered_questions_for_wordcloud():
+    
+def get_questions_as_text():
     query = "SELECT question_text FROM user_questions"
     df = pd.read_sql(query, engine)
-
-    # 자주 등장하는 템플릿 질문 제거
+    
+    # 자주 반복된 질문 제거
     freq = df['question_text'].value_counts()
-    high_freq = freq[freq > 30].index.tolist()  # 등장 횟수 기준은 조정 가능
+    template_questions = freq[freq > 30].index.tolist()
+    filtered_df = df[~df['question_text'].isin(template_questions)]
 
-    # 너무 자주 나온 질문은 제외 (예: 대화 스타터 16개)
-    filtered = df[~df['question_text'].isin(high_freq)]
+    return " ".join(filtered_df['question_text'].dropna().tolist())
 
-    return " ".join(filtered['question_text'].dropna().tolist())
-
-
-def extract_nouns(text):
-    okt = Okt()
-    nouns = okt.nouns(text)
-    words = [w for w in nouns if len(w) > 1]
-    return Counter(words)
-
-def render_wordcloud(counter):
+def render_wordcloud_raw(text):
     wc = WordCloud(
-        font_path='Pretendard-Regular.ttf',  # 한글 대응 폰트 경로
+        font_path='Pretendard-Regular.ttf',  # 한글 폰트 경로 필수
         background_color='white',
         width=800,
         height=400
-    ).generate_from_frequencies(counter)
+    ).generate(text)
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.imshow(wc, interpolation='bilinear')
     ax.axis('off')
     return fig
+
 
 # --- 버튼 클릭시 데이터 로드 ---
 if st.button("🔄 실시간 데이터 조회"):
@@ -182,14 +175,13 @@ if st.button("🔄 실시간 데이터 조회"):
         st.subheader("🔸 DB 인기 성경말씀 구절 Top 30")
         st.dataframe(db_data, use_container_width=True)
 
-    with st.spinner("사용자 질문 분석 중..."):
-        text = get_filtered_questions_for_wordcloud()
-        if not text.strip():
-            st.warning("질문 데이터가 없습니다.")
-        else:
-            counter = extract_nouns(text)
-            fig = render_wordcloud(counter)
+    with st.spinner("워드클라우드 생성 중..."):
+        text = get_questions_as_text()
+        if text.strip():
+            fig = render_wordcloud_raw(text)
             st.pyplot(fig)
+        else:
+            st.warning("질문 데이터가 부족합니다.")
 
 else:
     st.info("👆 버튼을 눌러 최신 데이터를 조회합니다.")
