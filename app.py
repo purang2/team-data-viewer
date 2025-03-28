@@ -168,7 +168,7 @@ def get_questions_as_text():
 
 def render_wordcloud_raw(text):
     wc = WordCloud(
-        font_path='Pretendard-Regular.ttf',  # 한글 폰트 경로 필수
+        font_path='fonts/Pretendard-Regular.ttf',  # ← 상대 경로로 수정!
         background_color='white',
         width=800,
         height=400
@@ -178,6 +178,7 @@ def render_wordcloud_raw(text):
     ax.imshow(wc, interpolation='bilinear')
     ax.axis('off')
     return fig
+
 
 
 # --- 버튼 클릭시 데이터 로드 ---
