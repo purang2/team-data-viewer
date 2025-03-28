@@ -7,7 +7,6 @@ from google.oauth2 import service_account
 from sshtunnel import SSHTunnelForwarder
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-from konlpy.tag import Okt
 from collections import Counter
 
 st.set_page_config(page_title="📊 성경챗봇 데이터 Viewer", layout="wide")
