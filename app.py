@@ -204,7 +204,8 @@ if st.button("🔄 실시간 데이터 조회"):
         # 🧾 DB 테이블
         st.subheader("🔸 DB 인기 성경말씀 구절 Top 30")
         st.dataframe(db_data, use_container_width=True)
-
+        
+    st.subheader("💬 사용자가 가장 많이 고민한 단어는?")
     with st.spinner("워드클라우드 생성 중..."):
         text = get_questions_as_text()
         if text.strip():
