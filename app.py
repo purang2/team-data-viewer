@@ -90,7 +90,7 @@ def get_db_data():
 
     return df_db
 
-def get_questions_as_text():
+def get_questions_as_freq_dict():
     ssh = st.secrets["ssh"]
     query = "SELECT question_text FROM user_questions"
 
@@ -102,20 +102,22 @@ def get_questions_as_text():
     ) as tunnel:
 
         local_port = tunnel.local_bind_port
-        engine = create_engine(f'postgresql://{ssh["db_user"]}:{ssh["db_password"]}@localhost:{local_port}/{ssh["db_name"]}')
+        engine = create_engine(
+            f'postgresql://{ssh["db_user"]}:{ssh["db_password"]}@localhost:{local_port}/{ssh["db_name"]}'
+        )
         df = pd.read_sql(query, engine)
 
-    freq = df['question_text'].value_counts()
-    template_questions = freq[freq > 30].index.tolist()
-    filtered_df = df[~df['question_text'].isin(template_questions)]
+    # 질문 전체 문장 빈도수 카운트
+    freq_dict = df['question_text'].value_counts().to_dict()
 
-    return " ".join(filtered_df['question_text'].dropna().tolist())
+    return freq_dict
 
-def render_wordcloud_raw(text):
+def render_wordcloud_freq(freq_dict):
     wc = WordCloud(
         font_path='fonts/Pretendard-Regular.ttf',
-        background_color='white', width=800, height=400
-    ).generate(text)
+        background_color='white',
+        width=800, height=400
+    ).generate_from_frequencies(freq_dict)  # 빈도수 딕셔너리 이용!
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.imshow(wc, interpolation='bilinear')
@@ -149,11 +151,11 @@ if st.button("🔄 실시간 데이터 조회"):
         st.subheader("🔸 DB 인기 성경말씀 구절 Top 30")
         st.dataframe(db_data, use_container_width=True)
 
-    st.subheader("💬 사용자가 가장 많이 고민한 단어는?")
+    st.subheader("💬 사용자가 가장 많이 고민한 질문은?")
     with st.spinner("워드클라우드 생성 중..."):
-        text = get_questions_as_text()
-        if text.strip():
-            fig = render_wordcloud_raw(text)
+        freq_dict = get_questions_as_freq_dict()
+        if freq_dict:
+            fig = render_wordcloud_freq(freq_dict)
             st.pyplot(fig)
         else:
             st.warning("질문 데이터가 부족합니다.")
