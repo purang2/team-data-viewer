@@ -94,6 +94,26 @@ def get_questions_as_freq_dict():
     ssh = st.secrets["ssh"]
     query = "SELECT question_text FROM user_questions"
 
+    starter_questions = [
+        "가족과의 갈등을 어떻게 풀어야 할까요?",
+        "친구관계에서 상처받았을 때는 어떻게 해야 할까요?",
+        "대인관계가 어려울 때 어떻게 해야 할까요?",
+        "직장 안에서 갈등이 생겼을 때 어떻게 대처해야 할까요?",
+        "기도는 어떻게 하면 좋을까요?",
+        "성경 읽기가 어려워요.",
+        "예배생활이 게을러졌어요.",
+        "영적으로 메말랐다고 느낄 때 어떻게 회복할 수 있을까요?",
+        "중요한 결정을 앞두고 있어요.",
+        "미래가 불안해요.",
+        "스트레스 관리가 필요해요.",
+        "감사와 기쁨을 잃었을 때, 어떻게 회복하면 좋을까요?",
+        "고난이 찾아왔을 때, 하나님을 신뢰하기가 어려워요.",
+        "좌절하고 낙심이 클 때, 어떻게 회복할 수 있을까요?",
+        "재정적 어려움이나 질병으로 힘들 때 어떻게 극복해야 할까요?",
+        "실패 후 다시 일어서고 싶어요. 어떻게 재기할 수 있을까요?",
+        "슬픔과 상실 가운데 있을 때, 어떻게 위로를 얻을 수 있을까요?"
+    ]
+
     with SSHTunnelForwarder(
         (ssh["ssh_host"], ssh["ssh_port"]),
         ssh_username=ssh["ssh_username"],
@@ -107,10 +127,13 @@ def get_questions_as_freq_dict():
         )
         df = pd.read_sql(query, engine)
 
-    # 질문 전체 문장 빈도수 카운트
-    freq_dict = df['question_text'].value_counts().to_dict()
+    # 스타터 질문 제외
+    filtered_df = df[~df['question_text'].isin(starter_questions)]
+
+    freq_dict = filtered_df['question_text'].value_counts().to_dict()
 
     return freq_dict
+
 
 def render_wordcloud_freq(freq_dict):
     wc = WordCloud(
