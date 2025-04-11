@@ -145,12 +145,13 @@ def render_wordcloud_freq(freq_dict):
         background_color='white',
         width=1200,
         height=600,
-        max_words=70,              # 최대 보여줄 질문 수를 높게 설정 (기본 200이지만 폰트 크기 분산 때문에 50~100 추천)
-        max_font_size=110,         # 최대 폰트 사이즈 제한 (조금 작게 해서 많은 질문 표시 가능)
-        relative_scaling=0.5,      # 글자 크기 간의 상대적 크기 차이 줄임 (크기차이가 극단적이지 않게)
-        prefer_horizontal=1.0,     # 가독성 좋게 수평 정렬 위주
+        max_words=200,            # 단어 수 최대한 많게 설정
+        max_font_size=80,         # 글자 크기를 줄여 단어 밀도 증가
+        relative_scaling=0.3,     # 상대적 크기 차이를 더 줄임(골고루 분포)
+        prefer_horizontal=0.9,    # 약간의 세로배치 허용으로 밀도 높임
+        colormap='tab20c',        # 더욱 다양한 색상 조합 사용
+        margin=1                  # 단어 간 여백을 최소화
     ).generate_from_frequencies(freq_dict)
-
     fig, ax = plt.subplots(figsize=(15, 7))
     ax.imshow(wc, interpolation='bilinear')
     ax.axis('off')
@@ -183,7 +184,7 @@ if st.button("🔄 실시간 데이터 조회"):
         st.subheader("🔸 DB 인기 성경말씀 구절 Top 30")
         st.dataframe(db_data, use_container_width=True)
 
-    st.subheader("💬 사용자가 가장 많이 고민한 질문은?")
+    st.subheader("💬 사용자가 가장 많이 고민한 단어는?")
     with st.spinner("워드클라우드 생성 중..."):
         freq_dict = get_questions_as_freq_dict()
         if freq_dict:
