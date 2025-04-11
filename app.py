@@ -7,6 +7,8 @@ from google.oauth2 import service_account
 from sshtunnel import SSHTunnelForwarder
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+import re
+from collections import Counter
 
 st.set_page_config(page_title="📊 성경챗봇 데이터 Viewer", layout="wide")
 
@@ -95,8 +97,7 @@ def get_questions_as_freq_dict():
     query = "SELECT question_text FROM user_questions"
 
     starter_questions = [
-        "슬픔과 상실 가운데 있을 때, 어떻게 위로를 얻을 수 있을까요?"
-    ]
+        "직장 안에서 갈등이 생겼을 때 어떻게 대처해야 할까요?",]
 
     with SSHTunnelForwarder(
         (ssh["ssh_host"], ssh["ssh_port"]),
@@ -114,7 +115,10 @@ def get_questions_as_freq_dict():
     # 스타터 질문 제외
     filtered_df = df[~df['question_text'].isin(starter_questions)]
 
-    freq_dict = filtered_df['question_text'].value_counts().to_dict()
+    texts = " ".join(filtered_df['question_text'].dropna().tolist())
+    words = re.findall(r'[가-힣]{2,}', texts)  # 두 글자 이상 한글 단어만 추출
+
+    freq_dict = dict(Counter(words))
 
     return freq_dict
 
