@@ -116,10 +116,15 @@ def render_wordcloud_freq(freq_dict):
     wc = WordCloud(
         font_path='fonts/Pretendard-Regular.ttf',
         background_color='white',
-        width=800, height=400
-    ).generate_from_frequencies(freq_dict)  # 빈도수 딕셔너리 이용!
+        width=1200,
+        height=600,
+        max_words=50,              # 최대 보여줄 질문 수를 높게 설정 (기본 200이지만 폰트 크기 분산 때문에 50~100 추천)
+        max_font_size=100,         # 최대 폰트 사이즈 제한 (조금 작게 해서 많은 질문 표시 가능)
+        relative_scaling=0.5,      # 글자 크기 간의 상대적 크기 차이 줄임 (크기차이가 극단적이지 않게)
+        prefer_horizontal=1.0,     # 가독성 좋게 수평 정렬 위주
+    ).generate_from_frequencies(freq_dict)
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(15, 7))
     ax.imshow(wc, interpolation='bilinear')
     ax.axis('off')
     return fig
